@@ -44,6 +44,19 @@ Edit `config/packages.json` to specify which Mathematica packages to pre-load.
 
 ## Quick Start
 
+### Minimal Commands (No .env file required)
+
+```bash
+# HTTP mode - default port 3000, no authentication
+bun run start:http
+
+# HTTP mode - custom port (e.g., 8080)
+MCP_HTTP_PORT=8080 bun run start:http
+
+# Stdio mode - for Claude Desktop integration
+bun index.ts
+```
+
 ### HTTP/SSE Mode
 
 ```bash
