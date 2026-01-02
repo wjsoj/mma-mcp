@@ -1,10 +1,10 @@
 /**
  * HTTP transport for MCP server using Bun.serve().
- * Uses a simpler POST-based approach instead of SSE for better compatibility.
+ * Uses Streamable HTTP (SSE) transport for full MCP protocol support.
  */
 
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import type { EnvConfig } from '../../config/schema.ts';
 import {
   validateBearerToken,
@@ -15,9 +15,7 @@ import {
 import { logger } from '../../utils/logger.ts';
 
 /**
- * Start HTTP transport using Bun.serve()
- * Note: This is a simplified HTTP implementation.
- * For full SSE support, consider using stdio transport with a reverse proxy.
+ * Start HTTP transport using Bun.serve() with Streamable HTTP (SSE) support
  *
  * @param mcpServer - MCP server instance
  * @param config - Environment configuration
@@ -26,7 +24,7 @@ export async function startHttpTransport(
   mcpServer: Server,
   config: EnvConfig
 ) {
-  logger.info('Starting HTTP transport...');
+  logger.info('Starting HTTP transport with Streamable HTTP (SSE)...');
 
   // Validate API key security if configured
   if (config.MCP_API_KEY) {
@@ -40,6 +38,19 @@ export async function startHttpTransport(
     logger.warn('⚠️  Set MCP_API_KEY environment variable to enable authentication.');
   }
 
+  // Create Streamable HTTP transport for MCP
+  // Use stateful mode with session management
+  const transport = new WebStandardStreamableHTTPServerTransport({
+    sessionIdGenerator: () => crypto.randomUUID(),
+  });
+
+  logger.debug('Streamable HTTP transport created');
+
+  // Connect MCP server to transport
+  await mcpServer.connect(transport);
+
+  logger.info('MCP server connected to HTTP transport');
+
   // Create Bun HTTP server
   const httpServer = Bun.serve({
     port: config.MCP_HTTP_PORT,
@@ -52,8 +63,9 @@ export async function startHttpTransport(
       logger.debug(`[HTTP] ${method} ${url.pathname}`);
 
       // Handle /mcp endpoint (main MCP protocol endpoint)
-      if (url.pathname === '/mcp' && method === 'POST') {
-        // Validate bearer token
+      // Supports GET (SSE stream), POST (JSON-RPC), and DELETE (session termination)
+      if (url.pathname === '/mcp') {
+        // Validate bearer token for authentication
         if (!validateBearerToken(req, config.MCP_API_KEY)) {
           logAuthAttempt(req, false);
           return createUnauthorizedResponse('Invalid or missing bearer token');
@@ -62,22 +74,9 @@ export async function startHttpTransport(
         logAuthAttempt(req, true);
 
         try {
-          // For now, return a message indicating this is not fully implemented
-          // Full implementation would require SSE or WebSocket support
-          return new Response(
-            JSON.stringify({
-              error: 'TransportNotSupported',
-              message: 'HTTP/POST transport is not fully implemented. Please use stdio transport instead.',
-              suggestion: 'Run with MCP_TRANSPORT=stdio for full functionality',
-              timestamp: new Date().toISOString(),
-            }),
-            {
-              status: 501,
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            }
-          );
+          // Delegate to the MCP transport's handleRequest
+          // This handles the full MCP protocol (SSE streams, JSON-RPC, etc.)
+          return await transport.handleRequest(req);
         } catch (error) {
           logger.error('[HTTP] Error handling MCP request:', error);
 
@@ -106,8 +105,8 @@ export async function startHttpTransport(
             version: '1.0.0',
             timestamp: new Date().toISOString(),
             uptime: process.uptime(),
-            transport: 'http-limited',
-            note: 'For full MCP support, use stdio transport',
+            transport: 'streamable-http',
+            note: 'Full MCP protocol support with SSE',
           }),
           {
             status: 200,
@@ -124,14 +123,15 @@ export async function startHttpTransport(
           JSON.stringify({
             name: 'mathematica-mcp-server',
             version: '1.0.0',
-            transport: 'http-limited',
+            transport: 'streamable-http',
             endpoints: {
+              mcp: '/mcp (GET for SSE stream, POST for JSON-RPC, DELETE for session termination)',
               health: '/health',
               info: '/info',
             },
             authentication: config.MCP_API_KEY ? 'bearer' : 'disabled',
             timestamp: new Date().toISOString(),
-            note: 'For full MCP protocol support, use stdio transport',
+            note: 'Full MCP protocol support with Streamable HTTP (SSE)',
           }),
           {
             status: 200,
@@ -180,9 +180,10 @@ export async function startHttpTransport(
   });
 
   logger.info(`HTTP server listening on http://${config.MCP_HTTP_HOST}:${config.MCP_HTTP_PORT}`);
+  logger.info(`MCP endpoint: http://${config.MCP_HTTP_HOST}:${config.MCP_HTTP_PORT}/mcp`);
   logger.info(`Health check: http://${config.MCP_HTTP_HOST}:${config.MCP_HTTP_PORT}/health`);
   logger.info(`Server info: http://${config.MCP_HTTP_HOST}:${config.MCP_HTTP_PORT}/info`);
-  logger.warn('NOTE: HTTP transport has limited MCP support. Use stdio transport for full functionality.');
+  logger.info('Transport: Streamable HTTP (SSE) - Full MCP protocol support');
 
   if (config.MCP_API_KEY) {
     logger.info('Authentication: Bearer token (enabled)');
@@ -207,10 +208,11 @@ export async function stopHttpTransport(httpServer: any): Promise<void> {
  */
 export function getHttpTransportInfo(config: EnvConfig) {
   return {
-    type: 'http-limited',
+    type: 'streamable-http',
     host: config.MCP_HTTP_HOST,
     port: config.MCP_HTTP_PORT,
     url: `http://${config.MCP_HTTP_HOST}:${config.MCP_HTTP_PORT}`,
+    mcpEndpoint: `http://${config.MCP_HTTP_HOST}:${config.MCP_HTTP_PORT}/mcp`,
     authenticated: !!config.MCP_API_KEY,
   };
 }
@@ -226,6 +228,7 @@ export function printHttpTransportInfo(config: EnvConfig): void {
   logger.info(`Host: ${info.host}`);
   logger.info(`Port: ${info.port}`);
   logger.info(`URL: ${info.url}`);
+  logger.info(`MCP Endpoint: ${info.mcpEndpoint}`);
   logger.info(`Authenticated: ${info.authenticated}`);
   logger.info('===================================');
 }
