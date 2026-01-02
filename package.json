@@ -1,0 +1,40 @@
+{
+  "name": "mma-mcp",
+  "version": "1.0.0",
+  "description": "Model Context Protocol (MCP) server for executing Mathematica code with package management",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "bun run index.ts",
+    "start:http": "MCP_TRANSPORT=http bun run index.ts",
+    "start:stdio": "MCP_TRANSPORT=stdio bun run index.ts",
+    "dev": "bun --watch index.ts",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "typecheck": "tsc --noEmit",
+    "generate-key": "bun -e 'console.log(crypto.randomUUID().replace(/-/g, \"\"))'"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mathematica",
+    "wolfram",
+    "wolframscript",
+    "server",
+    "typescript",
+    "bun"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "zod": "^4.3.4"
+  }
+}

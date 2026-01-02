@@ -1,0 +1,11 @@
+{
+  "version": "1.0.0",
+  "packages": [
+    "LinearAlgebra",
+    "FeynCalc",
+    "X",
+    "Susyno"
+  ],
+  "autoLoad": true,
+  "description": "Pre-configured Mathematica packages to load on server startup"
+}
