@@ -39,10 +39,8 @@ export async function startHttpTransport(
   }
 
   // Create Streamable HTTP transport for MCP
-  // Use stateful mode with session management
-  const transport = new WebStandardStreamableHTTPServerTransport({
-    sessionIdGenerator: () => crypto.randomUUID(),
-  });
+  // Use stateless mode (no session management) for HTTP to support multiple clients
+  const transport = new WebStandardStreamableHTTPServerTransport();
 
   logger.debug('Streamable HTTP transport created');
 
