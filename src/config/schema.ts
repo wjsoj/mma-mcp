@@ -23,7 +23,7 @@ export const EnvSchema = z.object({
   WOLFRAM_SCRIPT_PATH: z.string().default('wolframscript'),
   DEFAULT_TIMEOUT: z.coerce.number().int().min(1000).max(600000).default(30000),
   MAX_TIMEOUT: z.coerce.number().int().min(1000).max(600000).default(300000),
-  KERNEL_WARMUP_DELAY: z.coerce.number().int().min(0).max(60000).default(10000)
+  KERNEL_WARMUP_DELAY: z.coerce.number().int().min(0).max(60000).default(120000)
     .describe('Delay in ms after kernel warmup before starting transport (0-60000)'),
 
   // Package configuration
