@@ -237,26 +237,27 @@ The server follows a multi-stage initialization process to ensure the Wolfram Ke
 The `KERNEL_WARMUP_DELAY` environment variable controls how long the server waits after kernel initialization before starting the transport layer:
 
 ```bash
-# Default: 10 seconds (10000ms)
-KERNEL_WARMUP_DELAY=10000
+# Default: 5 seconds (5000ms)
+KERNEL_WARMUP_DELAY=5000
+
+# Increase delay for slower systems (2 minutes)
+KERNEL_WARMUP_DELAY=120000
 
 # Disable delay (not recommended)
 KERNEL_WARMUP_DELAY=0
-
-# Increase delay for slower systems
-KERNEL_WARMUP_DELAY=15000
 ```
 
 **Why this delay exists:**
 - The Wolfram Kernel performs background initialization after the first computation
 - This delay ensures the kernel is fully ready before `/health` reports `status: ok`
 - Prevents clients from connecting before the server can actually process requests
-- Default of 10 seconds is recommended for most systems
+- Default of 5 seconds is suitable for most systems
 
 **Configuration:**
-- Range: 0-60000 milliseconds (0-60 seconds)
-- Default: 10000ms (10 seconds)
+- Range: 0-180000 milliseconds (0-3 minutes)
+- Default: 5000ms (5 seconds)
 - Set to `0` to disable (only for testing/development)
+- Recommended: 5000-180000ms depending on system performance
 
 ## Documentation
 

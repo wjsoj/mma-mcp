@@ -127,8 +127,25 @@ export async function executeWolframScript(
     const output = result.stdout.toString();
     const stderr = result.stderr.toString();
 
+    // Filter out benign WolframScript warnings
     if (stderr && stderr.trim().length > 0) {
-      logger.warn('WolframScript stderr output:', stderr.trim());
+      const stderrTrimmed = stderr.trim();
+
+      // Ignore known benign warnings
+      const benignWarnings = [
+        'Failed to open configuaration file at path:', // WolframScript config file warning (typo is intentional)
+        'Failed to open configuration file at path:',  // Also handle correct spelling
+      ];
+
+      const isBenignWarning = benignWarnings.some(warning =>
+        stderrTrimmed.includes(warning)
+      );
+
+      if (!isBenignWarning) {
+        logger.warn('WolframScript stderr output:', stderrTrimmed);
+      } else {
+        logger.debug('WolframScript benign warning (ignored):', stderrTrimmed);
+      }
     }
 
     const executionTime = Date.now() - startTime;
