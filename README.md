@@ -220,6 +220,44 @@ Server information endpoint (authentication not required).
 
 Main MCP protocol endpoint for executing tools (requires authentication if `MCP_API_KEY` is set).
 
+## Server Startup and Initialization
+
+The server follows a multi-stage initialization process to ensure the Wolfram Kernel is fully ready before accepting requests:
+
+### Initialization Stages
+
+1. **WolframScript Check** - Verifies `wolframscript` executable is installed and accessible
+2. **MCP Server Creation** - Initializes the MCP server instance and registers tools
+3. **Kernel Warmup** - Executes a simple computation (`1+1`) to initialize the Wolfram Kernel
+4. **Stabilization Delay** - Waits for the kernel to fully stabilize (configurable, default 10 seconds)
+5. **Transport Start** - Starts HTTP or stdio transport and begins accepting requests
+
+### Kernel Warmup Delay
+
+The `KERNEL_WARMUP_DELAY` environment variable controls how long the server waits after kernel initialization before starting the transport layer:
+
+```bash
+# Default: 10 seconds (10000ms)
+KERNEL_WARMUP_DELAY=10000
+
+# Disable delay (not recommended)
+KERNEL_WARMUP_DELAY=0
+
+# Increase delay for slower systems
+KERNEL_WARMUP_DELAY=15000
+```
+
+**Why this delay exists:**
+- The Wolfram Kernel performs background initialization after the first computation
+- This delay ensures the kernel is fully ready before `/health` reports `status: ok`
+- Prevents clients from connecting before the server can actually process requests
+- Default of 10 seconds is recommended for most systems
+
+**Configuration:**
+- Range: 0-60000 milliseconds (0-60 seconds)
+- Default: 10000ms (10 seconds)
+- Set to `0` to disable (only for testing/development)
+
 ## Documentation
 
 See the full [README](./README.md) for:

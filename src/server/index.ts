@@ -17,6 +17,7 @@ import {
   printStdioTransportInfo,
 } from './transports/stdio.ts';
 import { logger } from '../utils/logger.ts';
+import { warmupWolframKernel } from '../mathematica/executor.ts';
 
 // Global references for cleanup
 let mcpServer: Server | null = null;
@@ -78,14 +79,30 @@ export async function startServer(): Promise<void> {
     logger.info('Creating MCP server...');
     mcpServer = await createMcpServer(config);
 
-    // Update server state after successful MCP server creation
-    // Note: createMcpServer checks WolframScript and initializes kernel
+    // At this point, WolframScript is available and MCP server is created
     serverState.wolframScriptAvailable = true;
-    serverState.wolframKernelInitialized = true;
     serverState.mcpServerConnected = true;
 
     // Print server information
     printServerInfo();
+
+    // Warm up Wolfram Kernel to ensure it's fully initialized
+    logger.info('Initializing Wolfram Kernel...');
+    const kernelReady = await warmupWolframKernel(config.WOLFRAM_SCRIPT_PATH);
+
+    if (!kernelReady) {
+      throw new Error('Failed to initialize Wolfram Kernel');
+    }
+
+    serverState.wolframKernelInitialized = true;
+    logger.info('Wolfram Kernel initialized successfully');
+
+    // Wait for kernel to stabilize (allows kernel to complete any background initialization)
+    if (config.KERNEL_WARMUP_DELAY > 0) {
+      logger.info(`Waiting for kernel to stabilize (${config.KERNEL_WARMUP_DELAY}ms)...`);
+      await new Promise(resolve => setTimeout(resolve, config.KERNEL_WARMUP_DELAY));
+      logger.info('Kernel stabilization complete');
+    }
 
     // Start appropriate transport based on configuration
     if (config.MCP_TRANSPORT === 'http') {

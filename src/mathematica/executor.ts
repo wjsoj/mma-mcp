@@ -222,3 +222,35 @@ export async function verifyPackage(
     return false;
   }
 }
+
+/**
+ * Warm up the Wolfram Kernel by executing a simple computation
+ * This ensures the kernel is fully initialized and ready to accept requests
+ * @param wolframPath - Path to wolframscript
+ * @returns true if warmup successful, false otherwise
+ */
+export async function warmupWolframKernel(
+  wolframPath: string = 'wolframscript'
+): Promise<boolean> {
+  try {
+    logger.info('Warming up Wolfram Kernel...');
+
+    const startTime = Date.now();
+
+    // Execute a simple computation to initialize the kernel
+    const result = await executeSimple('1+1', 10000, wolframPath);
+
+    const elapsedTime = Date.now() - startTime;
+
+    if (result.trim() === '2') {
+      logger.info(`Wolfram Kernel warmed up successfully in ${elapsedTime}ms`);
+      return true;
+    } else {
+      logger.error(`Wolfram Kernel warmup failed: unexpected result "${result}"`);
+      return false;
+    }
+  } catch (error) {
+    logger.error('Wolfram Kernel warmup failed:', error);
+    return false;
+  }
+}
