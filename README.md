@@ -102,6 +102,124 @@ Execute Mathematica code with configurable options.
 
 Get list of configured Mathematica packages.
 
+## HTTP API Endpoints
+
+When running in HTTP mode, the server exposes the following endpoints:
+
+### GET /health
+
+Comprehensive health check endpoint that verifies all critical server components are operational.
+
+**Authentication:** None required
+
+**Response Status Codes:**
+- `200 OK` - All checks passed, server is fully operational
+- `503 Service Unavailable` - Server is initializing or one or more checks failed
+
+**Response Format:**
+
+**Healthy Response (200 OK):**
+```json
+{
+  "status": "ok",
+  "server": "mathematica-mcp-server",
+  "version": "1.0.0",
+  "timestamp": "2024-01-09T10:30:00.000Z",
+  "uptime": 123.45,
+  "startedAt": "2024-01-09T10:28:00.000Z",
+  "transport": "streamable-http",
+  "checks": {
+    "wolframScript": true,
+    "wolframKernel": true,
+    "mcpServer": true,
+    "transport": true
+  }
+}
+```
+
+**Unhealthy Response (503 Service Unavailable):**
+```json
+{
+  "status": "error",
+  "server": "mathematica-mcp-server",
+  "version": "1.0.0",
+  "timestamp": "2024-01-09T10:30:00.000Z",
+  "uptime": 10.5,
+  "startedAt": "2024-01-09T10:29:50.000Z",
+  "transport": "streamable-http",
+  "checks": {
+    "wolframScript": false,
+    "wolframKernel": false,
+    "mcpServer": true,
+    "transport": true
+  },
+  "error": "WolframScript not found at path: wolframscript",
+  "failedChecks": [
+    "WolframScript not available",
+    "Wolfram Kernel not initialized"
+  ]
+}
+```
+
+**Initializing Response (503 Service Unavailable):**
+```json
+{
+  "status": "initializing",
+  "server": "mathematica-mcp-server",
+  "version": "1.0.0",
+  "timestamp": "2024-01-09T10:28:05.000Z",
+  "uptime": 5.2,
+  "startedAt": "2024-01-09T10:28:00.000Z",
+  "transport": "streamable-http",
+  "checks": {
+    "wolframScript": false,
+    "wolframKernel": false,
+    "mcpServer": false,
+    "transport": false
+  }
+}
+```
+
+**Health Status Values:**
+- `ok` - All checks passed, server is ready to execute Mathematica code
+- `initializing` - Server is starting up, not yet ready
+- `error` - One or more checks failed
+
+**Health Checks:**
+
+The endpoint verifies the following components:
+
+- `wolframScript` - WolframScript executable is available
+- `wolframKernel` - Wolfram Kernel has been initialized
+- `mcpServer` - MCP server instance is connected
+- `transport` - HTTP transport is connected
+
+**Note:** Package loading status is NOT considered a failure condition. The server can operate without pre-loaded packages.
+
+**Example Usage:**
+
+```bash
+# Check server health
+curl http://127.0.0.1:3000/health
+
+# Check health with pretty output
+curl -s http://127.0.0.1:3000/health | jq
+
+# Use in health check scripts (exits with non-zero on error)
+curl -f http://127.0.0.1:3000/health || echo "Server is not healthy"
+
+# Check only HTTP status code
+curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/health
+```
+
+### GET /info
+
+Server information endpoint (authentication not required).
+
+### POST /mcp
+
+Main MCP protocol endpoint for executing tools (requires authentication if `MCP_API_KEY` is set).
+
 ## Documentation
 
 See the full [README](./README.md) for:

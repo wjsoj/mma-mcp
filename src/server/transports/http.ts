@@ -13,6 +13,7 @@ import {
   validateApiKeySecurity,
 } from '../../middleware/auth.ts';
 import { logger } from '../../utils/logger.ts';
+import { getServerHealthStatus } from '../index.ts';
 
 /**
  * Start HTTP transport using Bun.serve() with Streamable HTTP (SSE) support
@@ -94,20 +95,66 @@ export async function startHttpTransport(
         }
       }
 
-      // Handle /health endpoint (health check, no auth required)
+      // Handle /health endpoint (comprehensive health check, no auth required)
       if (url.pathname === '/health') {
+        const healthStatus = getServerHealthStatus();
+
+        // Determine HTTP status code based on health
+        let httpStatusCode: number;
+        if (healthStatus.status === 'ok') {
+          httpStatusCode = 200;
+        } else if (healthStatus.status === 'initializing') {
+          httpStatusCode = 503; // Service Unavailable
+        } else {
+          httpStatusCode = 503; // Service Unavailable
+        }
+
+        // Build response with health information
+        const response: any = {
+          status: healthStatus.status,
+          server: 'mathematica-mcp-server',
+          version: '1.0.0',
+          timestamp: new Date().toISOString(),
+          uptime: healthStatus.uptime,
+          startedAt: healthStatus.startedAt?.toISOString() || null,
+          transport: 'streamable-http',
+          checks: {
+            wolframScript: healthStatus.checks.wolframScriptAvailable,
+            wolframKernel: healthStatus.checks.wolframKernelInitialized,
+            mcpServer: healthStatus.checks.mcpServerConnected,
+            transport: healthStatus.checks.transportConnected,
+          },
+        };
+
+        // Add error details if unhealthy
+        if (healthStatus.error) {
+          response.error = healthStatus.error;
+        }
+
+        // Add failure reasons for failed checks
+        if (healthStatus.status !== 'ok') {
+          const failedChecks: string[] = [];
+          if (!healthStatus.checks.wolframScriptAvailable) {
+            failedChecks.push('WolframScript not available');
+          }
+          if (!healthStatus.checks.wolframKernelInitialized) {
+            failedChecks.push('Wolfram Kernel not initialized');
+          }
+          if (!healthStatus.checks.mcpServerConnected) {
+            failedChecks.push('MCP server not connected');
+          }
+          if (!healthStatus.checks.transportConnected) {
+            failedChecks.push('Transport not connected');
+          }
+          if (failedChecks.length > 0) {
+            response.failedChecks = failedChecks;
+          }
+        }
+
         return new Response(
-          JSON.stringify({
-            status: 'healthy',
-            server: 'mathematica-mcp-server',
-            version: '1.0.0',
-            timestamp: new Date().toISOString(),
-            uptime: process.uptime(),
-            transport: 'streamable-http',
-            note: 'Full MCP protocol support with SSE',
-          }),
+          JSON.stringify(response, null, 2),
           {
-            status: 200,
+            status: httpStatusCode,
             headers: {
               'Content-Type': 'application/json',
             },

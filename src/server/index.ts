@@ -22,11 +22,40 @@ import { logger } from '../utils/logger.ts';
 let mcpServer: Server | null = null;
 let httpServer: any = null;
 
+// Server state tracking
+interface ServerState {
+  wolframScriptAvailable: boolean;
+  wolframKernelInitialized: boolean;
+  mcpServerConnected: boolean;
+  transportConnected: boolean;
+  initializationError: string | null;
+  startedAt: Date | null;
+}
+
+let serverState: ServerState = {
+  wolframScriptAvailable: false,
+  wolframKernelInitialized: false,
+  mcpServerConnected: false,
+  transportConnected: false,
+  initializationError: null,
+  startedAt: null,
+};
+
 /**
  * Start the MCP server with configured transport
  */
 export async function startServer(): Promise<void> {
   try {
+    // Reset server state
+    serverState = {
+      wolframScriptAvailable: false,
+      wolframKernelInitialized: false,
+      mcpServerConnected: false,
+      transportConnected: false,
+      initializationError: null,
+      startedAt: new Date(),
+    };
+
     logger.info('┌────────────────────────────────────────────┐');
     logger.info('│  Mathematica MCP Server                    │');
     logger.info('│  Version 1.0.0                             │');
@@ -49,6 +78,12 @@ export async function startServer(): Promise<void> {
     logger.info('Creating MCP server...');
     mcpServer = await createMcpServer(config);
 
+    // Update server state after successful MCP server creation
+    // Note: createMcpServer checks WolframScript and initializes kernel
+    serverState.wolframScriptAvailable = true;
+    serverState.wolframKernelInitialized = true;
+    serverState.mcpServerConnected = true;
+
     // Print server information
     printServerInfo();
 
@@ -57,6 +92,9 @@ export async function startServer(): Promise<void> {
       logger.info('Transport mode: HTTP/SSE');
 
       httpServer = await startHttpTransport(mcpServer, config);
+
+      // Mark transport as connected after successful start
+      serverState.transportConnected = true;
 
       if (logger.getLevel() === 'debug') {
         printHttpTransportInfo(config);
@@ -90,6 +128,9 @@ export async function startServer(): Promise<void> {
 
       await startStdioTransport(mcpServer);
 
+      // Mark transport as connected after successful start
+      serverState.transportConnected = true;
+
       logger.info('');
       logger.info('✓ Server started successfully!');
       logger.info('');
@@ -97,6 +138,8 @@ export async function startServer(): Promise<void> {
       logger.info('All logs are redirected to stderr.');
     }
   } catch (error) {
+    // Record initialization error
+    serverState.initializationError = error instanceof Error ? error.message : String(error);
     logger.error('Failed to start server:', error);
     throw error;
   }
@@ -121,6 +164,16 @@ export async function stopServer(): Promise<void> {
       mcpServer = null;
     }
 
+    // Reset server state
+    serverState = {
+      wolframScriptAvailable: false,
+      wolframKernelInitialized: false,
+      mcpServerConnected: false,
+      transportConnected: false,
+      initializationError: null,
+      startedAt: null,
+    };
+
     logger.info('Server stopped successfully');
   } catch (error) {
     logger.error('Error stopping server:', error);
@@ -142,6 +195,57 @@ export function getServerStatus(): {
     transport: httpServer ? 'http' : mcpServer ? 'stdio' : null,
     hasHttpServer: httpServer !== null,
     hasMcpServer: mcpServer !== null,
+  };
+}
+
+/**
+ * Get detailed server health status
+ */
+export function getServerHealthStatus(): {
+  status: 'ok' | 'error' | 'initializing';
+  checks: {
+    wolframScriptAvailable: boolean;
+    wolframKernelInitialized: boolean;
+    mcpServerConnected: boolean;
+    transportConnected: boolean;
+  };
+  error: string | null;
+  uptime: number | null;
+  startedAt: Date | null;
+} {
+  const allHealthy =
+    serverState.wolframScriptAvailable &&
+    serverState.wolframKernelInitialized &&
+    serverState.mcpServerConnected &&
+    serverState.transportConnected &&
+    serverState.initializationError === null;
+
+  const anyInitialized =
+    serverState.wolframScriptAvailable ||
+    serverState.wolframKernelInitialized ||
+    serverState.mcpServerConnected ||
+    serverState.transportConnected;
+
+  let status: 'ok' | 'error' | 'initializing';
+  if (allHealthy) {
+    status = 'ok';
+  } else if (!anyInitialized && serverState.initializationError === null) {
+    status = 'initializing';
+  } else {
+    status = 'error';
+  }
+
+  return {
+    status,
+    checks: {
+      wolframScriptAvailable: serverState.wolframScriptAvailable,
+      wolframKernelInitialized: serverState.wolframKernelInitialized,
+      mcpServerConnected: serverState.mcpServerConnected,
+      transportConnected: serverState.transportConnected,
+    },
+    error: serverState.initializationError,
+    uptime: serverState.startedAt ? (Date.now() - serverState.startedAt.getTime()) / 1000 : null,
+    startedAt: serverState.startedAt,
   };
 }
 
