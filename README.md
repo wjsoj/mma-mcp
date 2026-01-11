@@ -229,35 +229,7 @@ The server follows a multi-stage initialization process to ensure the Wolfram Ke
 1. **WolframScript Check** - Verifies `wolframscript` executable is installed and accessible
 2. **MCP Server Creation** - Initializes the MCP server instance and registers tools
 3. **Kernel Warmup** - Executes a simple computation (`1+1`) to initialize the Wolfram Kernel
-4. **Stabilization Delay** - Waits for the kernel to fully stabilize (configurable, default 10 seconds)
-5. **Transport Start** - Starts HTTP or stdio transport and begins accepting requests
-
-### Kernel Warmup Delay
-
-The `KERNEL_WARMUP_DELAY` environment variable controls how long the server waits after kernel initialization before starting the transport layer:
-
-```bash
-# Default: 5 seconds (5000ms)
-KERNEL_WARMUP_DELAY=5000
-
-# Increase delay for slower systems (2 minutes)
-KERNEL_WARMUP_DELAY=120000
-
-# Disable delay (not recommended)
-KERNEL_WARMUP_DELAY=0
-```
-
-**Why this delay exists:**
-- The Wolfram Kernel performs background initialization after the first computation
-- This delay ensures the kernel is fully ready before `/health` reports `status: ok`
-- Prevents clients from connecting before the server can actually process requests
-- Default of 5 seconds is suitable for most systems
-
-**Configuration:**
-- Range: 0-180000 milliseconds (0-3 minutes)
-- Default: 5000ms (5 seconds)
-- Set to `0` to disable (only for testing/development)
-- Recommended: 5000-180000ms depending on system performance
+4. **Transport Start** - Starts HTTP or stdio transport and begins accepting requests
 
 ## Documentation
 

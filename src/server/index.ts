@@ -97,13 +97,6 @@ export async function startServer(): Promise<void> {
     serverState.wolframKernelInitialized = true;
     logger.info('Wolfram Kernel initialized successfully');
 
-    // Wait for kernel to stabilize (allows kernel to complete any background initialization)
-    if (config.KERNEL_WARMUP_DELAY > 0) {
-      logger.info(`Waiting for kernel to stabilize (${config.KERNEL_WARMUP_DELAY}ms)...`);
-      await new Promise(resolve => setTimeout(resolve, config.KERNEL_WARMUP_DELAY));
-      logger.info('Kernel stabilization complete');
-    }
-
     // Start appropriate transport based on configuration
     if (config.MCP_TRANSPORT === 'http') {
       logger.info('Transport mode: HTTP/SSE');
