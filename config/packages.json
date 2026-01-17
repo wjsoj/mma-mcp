@@ -4,8 +4,7 @@
     "X",
     "Susyno",
     "FeynCalc",
-    "FeynRules",
-    "LinearAlgebra"
+    "FeynRules"
   ],
   "autoLoad": true,
   "description": "Pre-configured Mathematica packages to load on server startup"
