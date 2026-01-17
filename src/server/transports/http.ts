@@ -54,6 +54,7 @@ export async function startHttpTransport(
   const httpServer = Bun.serve({
     port: config.MCP_HTTP_PORT,
     hostname: config.MCP_HTTP_HOST,
+    idleTimeout: 2 * 60,
 
     async fetch(req: Request): Promise<Response> {
       const url = new URL(req.url);
