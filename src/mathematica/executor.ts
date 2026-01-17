@@ -223,7 +223,7 @@ export async function verifyPackage(
     // Returns $Failed if not found, otherwise returns the path
     const code = `If[FindFile["${packageName}\`"] =!= $Failed, "OK", "FAILED"]`;
 
-    const result = await executeSimple(code, 5000, wolframPath);
+    const result = await executeSimple(code, 3 * 60 * 1000, wolframPath);
 
     const success = result.trim() === 'OK';
 
