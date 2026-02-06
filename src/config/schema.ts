@@ -21,8 +21,8 @@ export const EnvSchema = z.object({
 
   // Mathematica/WolframScript configuration
   WOLFRAM_SCRIPT_PATH: z.string().default('wolframscript'),
-  DEFAULT_TIMEOUT: z.coerce.number().int().min(1000).max(600000).default(30000),
-  MAX_TIMEOUT: z.coerce.number().int().min(1000).max(600000).default(300000),
+  DEFAULT_TIMEOUT: z.coerce.number().int().min(1).max(86400).default(300),
+  MAX_TIMEOUT: z.coerce.number().int().min(1).max(86400).default(86400),
 
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
@@ -45,8 +45,8 @@ export const ExecuteMathematicaInputSchema = z.object({
   format: OutputFormatSchema.default('text')
     .describe('Output format: text (default), latex (TeXForm), or mathematica (InputForm)'),
 
-  timeout: z.number().int().min(1000).max(600000).optional()
-    .describe('Execution timeout in milliseconds (overrides default, clamped to MAX_TIMEOUT)'),
+  timeout: z.number().int().min(1).max(86400).optional()
+    .describe('Execution timeout in seconds (overrides default, clamped to MAX_TIMEOUT)'),
 
   path: z.string().optional()
     .describe('Working directory for wolframscript execution'),
@@ -69,7 +69,7 @@ export type ExecutionResult = z.infer<typeof ExecutionResultSchema>;
  * Execution options schema (internal)
  */
 export const ExecuteOptionsSchema = z.object({
-  timeout: z.number().int().min(1000),
+  timeout: z.number().int().min(1),
   format: OutputFormatSchema,
   path: z.string().optional(),
 });

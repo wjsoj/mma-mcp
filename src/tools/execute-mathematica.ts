@@ -34,9 +34,9 @@ export const EXECUTE_MATHEMATICA_TOOL: Tool = {
       },
       timeout: {
         type: 'number',
-        description: 'Execution timeout in milliseconds (1000-600000, clamped to MAX_TIMEOUT)',
-        minimum: 1000,
-        maximum: 600000,
+        description: 'Execution timeout in seconds (1-86400, clamped to MAX_TIMEOUT)',
+        minimum: 1,
+        maximum: 86400,
       },
       path: {
         type: 'string',
@@ -77,7 +77,7 @@ export async function handleExecuteMathematica(
 
     if (input.timeout && input.timeout > config.MAX_TIMEOUT) {
       logger.warn(
-        `[${toolName}] Requested timeout ${input.timeout}ms exceeds MAX_TIMEOUT ${config.MAX_TIMEOUT}ms, clamping`
+        `[${toolName}] Requested timeout ${input.timeout}s exceeds MAX_TIMEOUT ${config.MAX_TIMEOUT}s, clamping`
       );
     }
 

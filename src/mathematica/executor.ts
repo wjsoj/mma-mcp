@@ -81,8 +81,8 @@ export async function executeWolframScript(
     ? code
     : `${formatFunc}[${code}]`;
 
-  // Calculate timeout in seconds for wolframscript (rounds up)
-  const timeoutSec = Math.ceil(timeout / 1000);
+  // timeout is already in seconds
+  const timeoutSec = timeout;
 
   const startTime = Date.now();
 
@@ -100,7 +100,7 @@ export async function executeWolframScript(
 
     // Implement timeout using Promise.race
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('timeout')), timeout);
+      setTimeout(() => reject(new Error('timeout')), timeout * 1000);
     });
 
     const result = await Promise.race([proc, timeoutPromise]);
@@ -140,8 +140,8 @@ export async function executeWolframScript(
 
     // Check if it's a timeout error
     if (error.name === 'TimeoutError' || error.message?.includes('timed out')) {
-      logger.error(`Execution timed out after ${timeout}ms`);
-      throw new MathematicaTimeoutError(timeout);
+      logger.error(`Execution timed out after ${timeout}s`);
+      throw new MathematicaTimeoutError(timeout * 1000);
     }
 
     // Check if wolframscript is not found
@@ -168,12 +168,12 @@ export async function executeWolframScript(
 /**
  * Execute a simple Mathematica expression (convenience wrapper)
  * @param expression - Simple Mathematica expression
- * @param timeout - Optional timeout in milliseconds (default: 30000)
+ * @param timeout - Optional timeout in seconds (default: 300)
  * @returns Output as string
  */
 export async function executeSimple(
   expression: string,
-  timeout: number = 30000,
+  timeout: number = 300,
   wolframPath: string = 'wolframscript'
 ): Promise<string> {
   const result = await executeWolframScript(
@@ -203,7 +203,7 @@ export async function warmupWolframKernel(
     const startTime = Date.now();
 
     // Execute a simple computation to initialize the kernel
-    const result = await executeSimple('1+1', 10000, wolframPath);
+    const result = await executeSimple('1+1', 10, wolframPath);
 
     const elapsedTime = Date.now() - startTime;
 

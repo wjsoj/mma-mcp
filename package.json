@@ -10,8 +10,6 @@
     "start:http": "MCP_TRANSPORT=http bun run index.ts",
     "start:stdio": "MCP_TRANSPORT=stdio bun run index.ts",
     "dev": "bun --watch index.ts",
-    "test": "bun test",
-    "test:watch": "bun test --watch",
     "typecheck": "tsc --noEmit",
     "generate-key": "bun -e 'console.log(crypto.randomUUID().replace(/-/g, \"\"))'"
   },
