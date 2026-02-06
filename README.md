@@ -89,7 +89,7 @@ Execute Mathematica code with configurable options.
 **Parameters:**
 - `code` (string, required): Mathematica code
 - `format` (string): Output format - `text`, `latex`, `mathematica` (default: `text`)
-- `timeout` (number): Timeout in ms (1000-600000, default: 30000)
+- `timeout` (number): Timeout in seconds (1-86400, default: 300)
 
 **Usage Examples:**
 

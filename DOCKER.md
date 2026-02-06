@@ -210,8 +210,8 @@ Expected response:
 | `MCP_HTTP_HOST` | `0.0.0.0` | HTTP host (Docker default) |
 | `MCP_API_KEY` | - | Optional Bearer token auth |
 | `WOLFRAM_SCRIPT_PATH` | `wolframscript` | Path to executable |
-| `DEFAULT_TIMEOUT` | `30000` | Default timeout (ms) |
-| `MAX_TIMEOUT` | `300000` | Max timeout (ms) |
+| `DEFAULT_TIMEOUT` | `300` | Default timeout (seconds) |
+| `MAX_TIMEOUT` | `86400` | Max timeout (seconds) |
 | `LOG_LEVEL` | `info` | Logging level |
 
 ## Troubleshooting

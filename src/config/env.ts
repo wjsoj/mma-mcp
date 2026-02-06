@@ -42,7 +42,7 @@ export function loadEnvConfig(): EnvConfig {
     // Validate timeout constraints
     if (config.DEFAULT_TIMEOUT > config.MAX_TIMEOUT) {
       logger.warn(
-        `DEFAULT_TIMEOUT (${config.DEFAULT_TIMEOUT}ms) is greater than MAX_TIMEOUT (${config.MAX_TIMEOUT}ms). ` +
+        `DEFAULT_TIMEOUT (${config.DEFAULT_TIMEOUT}s) is greater than MAX_TIMEOUT (${config.MAX_TIMEOUT}s). ` +
         `Clamping to MAX_TIMEOUT.`
       );
       config.DEFAULT_TIMEOUT = config.MAX_TIMEOUT;
@@ -129,8 +129,8 @@ export function printEnvConfig(config: EnvConfig): void {
   }
 
   logger.info(`WolframScript Path: ${config.WOLFRAM_SCRIPT_PATH}`);
-  logger.info(`Default Timeout: ${config.DEFAULT_TIMEOUT}ms`);
-  logger.info(`Max Timeout: ${config.MAX_TIMEOUT}ms`);
+  logger.info(`Default Timeout: ${config.DEFAULT_TIMEOUT}s`);
+  logger.info(`Max Timeout: ${config.MAX_TIMEOUT}s`);
   logger.info(`Log Level: ${config.LOG_LEVEL}`);
   logger.info('================================');
 }
