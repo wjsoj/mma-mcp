@@ -131,7 +131,6 @@ export function printEnvConfig(config: EnvConfig): void {
   logger.info(`WolframScript Path: ${config.WOLFRAM_SCRIPT_PATH}`);
   logger.info(`Default Timeout: ${config.DEFAULT_TIMEOUT}ms`);
   logger.info(`Max Timeout: ${config.MAX_TIMEOUT}ms`);
-  logger.info(`Packages Config: ${config.PACKAGES_CONFIG_PATH}`);
   logger.info(`Log Level: ${config.LOG_LEVEL}`);
   logger.info('================================');
 }

@@ -24,29 +24,11 @@ export const EnvSchema = z.object({
   DEFAULT_TIMEOUT: z.coerce.number().int().min(1000).max(600000).default(30000),
   MAX_TIMEOUT: z.coerce.number().int().min(1000).max(600000).default(300000),
 
-  // Package configuration
-  PACKAGES_CONFIG_PATH: z.string().default('./config/packages.json'),
-
   // Logging
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 });
 
 export type EnvConfig = z.infer<typeof EnvSchema>;
-
-/**
- * Package configuration file schema (packages.json)
- */
-export const PackagesConfigSchema = z.object({
-  version: z.string().describe('Configuration version'),
-  packages: z.array(z.string().regex(/^[A-Za-z][A-Za-z0-9`]*$/))
-    .describe('List of Mathematica package names to pre-load'),
-  autoLoad: z.boolean().default(true)
-    .describe('Whether to automatically load packages on server startup'),
-  description: z.string().optional()
-    .describe('Human-readable description of this configuration'),
-});
-
-export type PackagesConfig = z.infer<typeof PackagesConfigSchema>;
 
 /**
  * Output format enum for Mathematica execution
@@ -66,13 +48,8 @@ export const ExecuteMathematicaInputSchema = z.object({
   timeout: z.number().int().min(1000).max(600000).optional()
     .describe('Execution timeout in milliseconds (overrides default, clamped to MAX_TIMEOUT)'),
 
-  autoLoadPackages: z.boolean().default(true)
-    .describe('Whether to automatically load pre-configured packages'),
-
-  additionalPackages: z.array(
-    z.string().regex(/^[A-Za-z][A-Za-z0-9`]*$/)
-  ).optional()
-    .describe('Additional packages to load for this execution only'),
+  path: z.string().optional()
+    .describe('Working directory for wolframscript execution'),
 });
 
 export type ExecuteMathematicaInput = z.infer<typeof ExecuteMathematicaInputSchema>;
@@ -89,28 +66,12 @@ export const ExecutionResultSchema = z.object({
 export type ExecutionResult = z.infer<typeof ExecutionResultSchema>;
 
 /**
- * Tool output schema for list_packages
- */
-export const ListPackagesOutputSchema = z.object({
-  configuredPackages: z.array(z.string())
-    .describe('List of pre-configured Mathematica packages'),
-  autoLoad: z.boolean()
-    .describe('Whether packages are auto-loaded on startup'),
-  total: z.number().int()
-    .describe('Total number of configured packages'),
-  loaded: z.boolean()
-    .describe('Whether packages have been loaded in current session'),
-});
-
-export type ListPackagesOutput = z.infer<typeof ListPackagesOutputSchema>;
-
-/**
  * Execution options schema (internal)
  */
 export const ExecuteOptionsSchema = z.object({
   timeout: z.number().int().min(1000),
   format: OutputFormatSchema,
-  packages: z.array(z.string()),
+  path: z.string().optional(),
 });
 
 export type ExecuteOptions = z.infer<typeof ExecuteOptionsSchema>;

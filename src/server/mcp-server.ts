@@ -9,16 +9,11 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import type { EnvConfig } from '../config/schema.ts';
-import { preloadPackages, getPackageState } from '../mathematica/package-loader.ts';
 import { checkWolframScriptInstallation } from '../mathematica/executor.ts';
 import {
   EXECUTE_MATHEMATICA_TOOL,
   handleExecuteMathematica,
 } from '../tools/execute-mathematica.ts';
-import {
-  LIST_PACKAGES_TOOL,
-  handleListPackages,
-} from '../tools/list-packages.ts';
 import { WolframScriptNotFoundError } from '../utils/errors.ts';
 import { logger } from '../utils/logger.ts';
 
@@ -51,22 +46,6 @@ export async function createMcpServer(config: EnvConfig): Promise<Server> {
 
   logger.info('MCP server instance created');
 
-  // Pre-load Mathematica packages
-  try {
-    logger.info('Pre-loading Mathematica packages...');
-    await preloadPackages(config.PACKAGES_CONFIG_PATH, config.WOLFRAM_SCRIPT_PATH);
-
-    const packageState = getPackageState();
-    logger.info(
-      `Package loading ${packageState.loaded ? 'succeeded' : 'skipped'} ` +
-      `(${packageState.packages.length} packages)`
-    );
-  } catch (error) {
-    logger.error('Package pre-loading failed:', error);
-    logger.warn('Server will start without pre-loaded packages');
-    // Don't throw - allow server to start without packages
-  }
-
   // Register tools/list handler
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     logger.debug('Handling tools/list request');
@@ -74,7 +53,6 @@ export async function createMcpServer(config: EnvConfig): Promise<Server> {
     return {
       tools: [
         EXECUTE_MATHEMATICA_TOOL,
-        LIST_PACKAGES_TOOL,
       ],
     };
   });
@@ -88,9 +66,6 @@ export async function createMcpServer(config: EnvConfig): Promise<Server> {
     switch (toolName) {
       case 'execute_mathematica':
         return await handleExecuteMathematica(request, config);
-
-      case 'list_packages':
-        return await handleListPackages(request);
 
       default:
         logger.error(`Unknown tool requested: ${toolName}`);
@@ -128,7 +103,6 @@ export function getServerInfo(): {
     version: '1.0.0',
     tools: [
       EXECUTE_MATHEMATICA_TOOL.name,
-      LIST_PACKAGES_TOOL.name,
     ],
   };
 }

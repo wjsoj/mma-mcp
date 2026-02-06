@@ -1,23 +1,22 @@
 # Mathematica MCP Server
 
-A production-ready [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that executes Mathematica code with package management, built from scratch using Bun, TypeScript, and Zod validation.
+A production-ready [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that executes Mathematica code, built from scratch using Bun, TypeScript, and Zod validation.
 
 ## Features
 
 - 🚀 **Dual Transport Support**: HTTP/SSE and stdio transports
 - 🔐 **Secure Authentication**: Bearer token authentication for HTTP transport
-- 📦 **Package Management**: Pre-load and manage Mathematica packages
 - ⏱️ **Timeout Control**: Configurable execution timeouts with dual protection
 - 📝 **Multiple Output Formats**: text, LaTeX (TeXForm), and Mathematica (InputForm)
 - ✅ **Type-Safe**: Full TypeScript implementation with Zod schema validation
 - ⚡ **Bun-Powered**: Built on Bun for fast performance
 - 🛡️ **Security**: Command injection prevention, timing-safe authentication
+- 🔧 **Native Package Loading**: Load Mathematica packages using standard `Needs[]` and `Get[]` syntax
 
 ## Prerequisites
 
 - [Bun](https://bun.sh/) (latest version recommended)
 - [Mathematica](https://www.wolfram.com/mathematica/) with `wolframscript` in PATH
-- Node.js 18+ (for TypeScript support)
 
 ## Installation
 
@@ -31,16 +30,12 @@ cd mma-mcp
 bun install
 ```
 
-3. Configure environment variables:
+3. Configure environment variables (optional):
 ```bash
 cp .env.example .env
 ```
 
 Edit `.env` to set your configuration.
-
-4. Configure packages (optional):
-
-Edit `config/packages.json` to specify which Mathematica packages to pre-load.
 
 ## Quick Start
 
@@ -94,13 +89,40 @@ Execute Mathematica code with configurable options.
 **Parameters:**
 - `code` (string, required): Mathematica code
 - `format` (string): Output format - `text`, `latex`, `mathematica` (default: `text`)
-- `timeout` (number): Timeout in ms (1000-600000)
-- `autoLoadPackages` (boolean): Auto-load configured packages (default: `true`)
-- `additionalPackages` (string[]): Additional packages to load
+- `timeout` (number): Timeout in ms (1000-600000, default: 30000)
 
-### list_packages
+**Usage Examples:**
 
-Get list of configured Mathematica packages.
+Basic computation:
+```json
+{
+  "name": "execute_mathematica",
+  "arguments": {
+    "code": "Solve[x^2 - 5x + 6 == 0, x]"
+  }
+}
+```
+
+Using LaTeX output format:
+```json
+{
+  "name": "execute_mathematica",
+  "arguments": {
+    "code": "Integrate[x^2, x]",
+    "format": "latex"
+  }
+}
+```
+
+Loading Mathematica packages:
+```json
+{
+  "name": "execute_mathematica",
+  "arguments": {
+    "code": "Needs[\"LinearAlgebra`\"]; MatrixPower[{{1,2},{3,4}}, 2]"
+  }
+}
+```
 
 ## HTTP API Endpoints
 
@@ -193,8 +215,6 @@ The endpoint verifies the following components:
 - `wolframKernel` - Wolfram Kernel has been initialized
 - `mcpServer` - MCP server instance is connected
 - `transport` - HTTP transport is connected
-
-**Note:** Package loading status is NOT considered a failure condition. The server can operate without pre-loaded packages.
 
 **Example Usage:**
 

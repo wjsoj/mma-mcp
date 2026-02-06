@@ -1,0 +1,70 @@
+version: "3.8"
+
+services:
+  # ============================================================
+  # 方案 1: 使用 host 网络模式 (推荐 - 最简单)
+  # 容器直接使用宿主机的网络栈，可以访问宿主机的 wolframscript
+  # ============================================================
+  mma-mcp-host:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mathematica-mcp-host
+    restart: unless-stopped
+    network_mode: host  # 使用宿主机网络
+
+    environment:
+      - MCP_TRANSPORT=${MCP_TRANSPORT:-http}
+      - MCP_HTTP_HOST=0.0.0.0
+      - MCP_HTTP_PORT=${MCP_HTTP_PORT:-3000}
+      - MCP_API_KEY=${MCP_API_KEY:-}
+      - WOLFRAM_SCRIPT_PATH=${WOLFRAM_SCRIPT_PATH:-wolframscript}
+      - DEFAULT_TIMEOUT=${DEFAULT_TIMEOUT:-30000}
+      - MAX_TIMEOUT=${MAX_TIMEOUT:-300000}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - NODE_ENV=production
+
+  # ============================================================
+  # 方案 2: 使用 volume 挂载 (独立网络)
+  # 将宿主机的 WolframScript 挂载到容器内
+  # ============================================================
+  mma-mcp-mount:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mathematica-mcp-mount
+    restart: unless-stopped
+
+    ports:
+      - "${MCP_HTTP_PORT:-3000}:3000"
+
+    environment:
+      - MCP_TRANSPORT=${MCP_TRANSPORT:-http}
+      - MCP_HTTP_HOST=0.0.0.0
+      - MCP_HTTP_PORT=${MCP_HTTP_PORT:-3000}
+      - MCP_API_KEY=${MCP_API_KEY:-}
+      - WOLFRAM_SCRIPT_PATH=/host/wolframscript
+      - DEFAULT_TIMEOUT=${DEFAULT_TIMEOUT:-30000}
+      - MAX_TIMEOUT=${MAX_TIMEOUT:-300000}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - NODE_ENV=production
+
+    # 挂载 WolframScript - 根据实际路径修改
+    volumes:
+      # 方式 A: 挂载 wolframscript 可执行文件
+      - /usr/local/bin/wolframscript:/host/wolframscript:ro
+
+      # 方式 B: 如果 Wolfram 安装在其他位置，可以挂载整个目录
+      # - /usr/local/Wolfram:/usr/local/Wolfram:ro
+      # - /opt/Wolfram:/opt/Wolfram:ro
+
+      # 挂载许可证配置（可能需要）
+      # - ~/.WolframEngine:/home/mcpuser/.WolframEngine
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+

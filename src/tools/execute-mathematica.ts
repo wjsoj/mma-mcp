@@ -10,8 +10,6 @@ import type {
 } from '@modelcontextprotocol/sdk/types.js';
 import { ExecuteMathematicaInputSchema, type EnvConfig } from '../config/schema.ts';
 import { executeWolframScript } from '../mathematica/executor.ts';
-import { getLoadedPackages } from '../mathematica/package-loader.ts';
-import { mergePackages } from '../config/packages.ts';
 import { formatErrorForMcp } from '../utils/errors.ts';
 import { logger } from '../utils/logger.ts';
 
@@ -20,13 +18,13 @@ import { logger } from '../utils/logger.ts';
  */
 export const EXECUTE_MATHEMATICA_TOOL: Tool = {
   name: 'execute_mathematica',
-  description: 'Execute Mathematica code and return results in various formats (text, LaTeX, or Mathematica syntax)',
+  description: 'Execute Mathematica code and return results in various formats (text, LaTeX, or Mathematica syntax). Users should load packages themselves using Needs[] or Get[] in their code.',
   inputSchema: {
     type: 'object',
     properties: {
       code: {
         type: 'string',
-        description: 'Mathematica code to execute',
+        description: 'Mathematica code to execute. Use Needs["Package`"] or Get["Package`"] to load packages.',
       },
       format: {
         type: 'string',
@@ -40,17 +38,9 @@ export const EXECUTE_MATHEMATICA_TOOL: Tool = {
         minimum: 1000,
         maximum: 600000,
       },
-      autoLoadPackages: {
-        type: 'boolean',
-        description: 'Whether to automatically load pre-configured packages',
-        default: true,
-      },
-      additionalPackages: {
-        type: 'array',
-        items: {
-          type: 'string',
-        },
-        description: 'Additional packages to load for this execution only',
+      path: {
+        type: 'string',
+        description: 'Working directory for wolframscript execution',
       },
     },
     required: ['code'],
@@ -76,8 +66,7 @@ export async function handleExecuteMathematica(
       codeLength: input.code.length,
       format: input.format,
       timeout: input.timeout,
-      autoLoadPackages: input.autoLoadPackages,
-      additionalPackages: input.additionalPackages?.length || 0,
+      path: input.path,
     });
 
     // Determine timeout (respect MAX_TIMEOUT)
@@ -92,32 +81,13 @@ export async function handleExecuteMathematica(
       );
     }
 
-    // Build package list
-    let packages: string[] = [];
-
-    if (input.autoLoadPackages) {
-      const loadedPackages = getLoadedPackages();
-      const additionalPackages = input.additionalPackages || [];
-
-      packages = mergePackages(loadedPackages, additionalPackages);
-
-      logger.debug(`[${toolName}] Using ${packages.length} package(s):`, packages.join(', '));
-    } else if (input.additionalPackages && input.additionalPackages.length > 0) {
-      packages = input.additionalPackages;
-
-      logger.debug(
-        `[${toolName}] Auto-load disabled, using ${packages.length} additional package(s):`,
-        packages.join(', ')
-      );
-    }
-
     // Execute Mathematica code
     const result = await executeWolframScript(
       input.code,
       {
         timeout,
         format: input.format,
-        packages,
+        path: input.path,
       },
       config.WOLFRAM_SCRIPT_PATH
     );

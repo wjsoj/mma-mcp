@@ -1,6 +1,6 @@
 /**
  * Mathematica/WolframScript executor.
- * Handles safe execution of Mathematica code with timeout and package loading.
+ * Handles safe execution of Mathematica code with timeout.
  */
 
 import { $ } from 'bun';
@@ -36,27 +36,6 @@ export async function checkWolframScriptInstallation(
 }
 
 /**
- * Build Mathematica code with package loading prefix
- * @param code - User's Mathematica code
- * @param packages - List of packages to load
- * @returns Complete code with package loading
- */
-function buildCodeWithPackages(code: string, packages: string[]): string {
-  if (packages.length === 0) {
-    return code;
-  }
-
-  // Build package loading commands
-  // Using Get[] for each package ensures they're loaded properly
-  const packageCommands = packages
-    .map(pkg => `Get["${pkg}\`"]`)
-    .join('; ');
-
-  // Combine package loading with user code
-  return `${packageCommands}; ${code}`;
-}
-
-/**
  * Get format option for wolframscript
  * @param format - Desired output format
  * @returns wolframscript format flag
@@ -76,7 +55,7 @@ function getFormatOption(format: OutputFormat): string {
 /**
  * Execute Mathematica code using wolframscript
  * @param code - Mathematica code to execute
- * @param options - Execution options (timeout, format, packages)
+ * @param options - Execution options (timeout, format)
  * @returns Execution result with formatted output
  * @throws {MathematicaTimeoutError} If execution exceeds timeout
  * @throws {MathematicaExecutionError} If execution fails
@@ -86,25 +65,21 @@ export async function executeWolframScript(
   options: ExecuteOptions,
   wolframPath: string = 'wolframscript'
 ): Promise<ExecutionResult> {
-  const { timeout, format, packages } = options;
+  const { timeout, format } = options;
 
   logger.debug('Executing Mathematica code:', {
     codeLength: code.length,
     format,
     timeout,
-    packagesCount: packages.length,
   });
-
-  // Build complete code with package loading
-  const fullCode = buildCodeWithPackages(code, packages);
 
   // Get format transformation
   const formatFunc = getFormatOption(format);
 
   // Wrap code with format transformation if needed
   const wrappedCode = format === 'text'
-    ? fullCode
-    : `${formatFunc}[${fullCode}]`;
+    ? code
+    : `${formatFunc}[${code}]`;
 
   // Calculate timeout in seconds for wolframscript (rounds up)
   const timeoutSec = Math.ceil(timeout / 1000);
@@ -115,7 +90,13 @@ export async function executeWolframScript(
     logger.debug(`Executing with ${timeoutSec}s wolframscript timeout`);
 
     // Execute using Bun's $ with template literal for safe escaping
-    const proc = $`${wolframPath} -timeout ${timeoutSec} -code ${wrappedCode}`.quiet();
+    let proc = $`${wolframPath} -timeout ${timeoutSec} -code ${wrappedCode}`.quiet();
+
+    // Set working directory if path is provided
+    if (options.path) {
+      proc = proc.cwd(options.path);
+      logger.debug(`Working directory set to: ${options.path}`);
+    }
 
     // Implement timeout using Promise.race
     const timeoutPromise = new Promise<never>((_, reject) => {
@@ -200,44 +181,11 @@ export async function executeSimple(
     {
       timeout,
       format: 'text',
-      packages: [],
     },
     wolframPath
   );
 
   return result.content;
-}
-
-/**
- * Verify that a specific Mathematica package exists
- * @param packageName - Name of the package to verify
- * @param wolframPath - Path to wolframscript
- * @returns true if package is found, false otherwise
- */
-export async function verifyPackage(
-  packageName: string,
-  wolframPath: string = 'wolframscript'
-): Promise<boolean> {
-  try {
-    // Use FindFile to check if package is available
-    // Returns $Failed if not found, otherwise returns the path
-    const code = `If[FindFile["${packageName}\`"] =!= $Failed, "OK", "FAILED"]`;
-
-    const result = await executeSimple(code, 5000, wolframPath);
-
-    const success = result.trim() === 'OK';
-
-    if (success) {
-      logger.debug(`Package verified: ${packageName}`);
-    } else {
-      logger.warn(`Package not found: ${packageName}`);
-    }
-
-    return success;
-  } catch (error) {
-    logger.error(`Package verification failed for ${packageName}:`, error);
-    return false;
-  }
 }
 
 /**

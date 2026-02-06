@@ -43,36 +43,6 @@ export class MathematicaExecutionError extends MathematicaError {
 }
 
 /**
- * Error thrown when a Mathematica package cannot be found
- */
-export class PackageNotFoundError extends MathematicaError {
-  public readonly packageName: string;
-
-  constructor(packageName: string) {
-    super(`Package not found or not accessible: ${packageName}`);
-    this.name = 'PackageNotFoundError';
-    this.packageName = packageName;
-    Object.setPrototypeOf(this, PackageNotFoundError.prototype);
-  }
-}
-
-/**
- * Error thrown when package verification fails
- */
-export class PackageVerificationError extends MathematicaError {
-  public readonly packageName: string;
-  public readonly reason: string;
-
-  constructor(packageName: string, reason: string) {
-    super(`Package verification failed for "${packageName}": ${reason}`);
-    this.name = 'PackageVerificationError';
-    this.packageName = packageName;
-    this.reason = reason;
-    Object.setPrototypeOf(this, PackageVerificationError.prototype);
-  }
-}
-
-/**
  * Error thrown when WolframScript is not installed or accessible
  */
 export class WolframScriptNotFoundError extends MathematicaError {
@@ -106,20 +76,6 @@ export class EnvValidationError extends ConfigurationError {
     this.name = 'EnvValidationError';
     this.issues = issues;
     Object.setPrototypeOf(this, EnvValidationError.prototype);
-  }
-}
-
-/**
- * Error thrown when package configuration file is invalid
- */
-export class PackageConfigError extends ConfigurationError {
-  public readonly configPath: string;
-
-  constructor(configPath: string, message: string) {
-    super(`Invalid package configuration at "${configPath}": ${message}`);
-    this.name = 'PackageConfigError';
-    this.configPath = configPath;
-    Object.setPrototypeOf(this, PackageConfigError.prototype);
   }
 }
 
