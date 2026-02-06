@@ -54,8 +54,8 @@ export async function startHttpTransport(
   const httpServer = Bun.serve({
     port: config.MCP_HTTP_PORT,
     hostname: config.MCP_HTTP_HOST,
-    // Set idle timeout to 1 hour to accommodate long-running Mathematica computations
-    idleTimeout: 3600,
+    // Set idle timeout to maximum (255s) to accommodate long-running Mathematica computations
+    idleTimeout: 255,
 
     async fetch(req: Request): Promise<Response> {
       const url = new URL(req.url);
